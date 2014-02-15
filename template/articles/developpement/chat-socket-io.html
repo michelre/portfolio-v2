@@ -1,0 +1,503 @@
+<h1>Réaliser un mini-chat avec SocketIO</h1>
+<i>Rémi Michel - le 9 février 2014</i>
+
+<h2>Introduction</h2>
+SocketIO est une petite librairie qui permet de créer des applications "temps réel" beaucoup plus facilement. Il convient de ne
+pas confondre SocketIO avec les WebSockets. En effet, WebSocket est un protocole tout comme peut l'être le protocole HTTP. WebSocket
+permet en fait de créer des "sockets" entre le client (navigateur) et le serveur. En d'autres termes, ce protocole possède l'immense
+avantage d'établir une <b>connexion persisante entre le client et le
+    serveur</b>. SocketIO utilise naturellement WebSocket comme
+protocole de communication.
+
+<h2>Installation</h2>
+
+Commencez par créer un répertoire de travail.
+
+<h3>NodeJS</h3>
+NodeJS est une plateforme qui permet d'écrire du code JavaScript coté serveur. SocketIO s'intègre très facilement avec NodeJS.
+Téléchargez donc NodeJS à l'adresse suivante: <a
+        href="http://nodejs.org/download/">http://nodejs.org/download</a>. Installez le
+puis ouvrez un terminal.
+
+<h3>Express</h3>
+NodeJS permet d'installer des modules très facilement. Vous trouverez ici: <a href="https://npmjs.org/">https://npmjs.org</a>, le repository
+officiel de l'ensemble des modules nodeJS.
+
+Nous allons dans un premier temps installer un de ces modules. Il s'agit du module Express. Ce module permet de simplifier
+la création d'applications web. L'API est d'ailleurs très bien documentée: <a href="http://expressjs.com/">http://expressjs.com</a>
+
+Pour installer ExpressJS, rien de plus simple:
+<pre>
+<code ng-highlight="javascript">
+$ npm install express
+</code>
+</pre>
+<div class="trick lifted">
+    <i class="fa fa-leaf"></i>
+    Remarquez la création du répertoire <i>node_modules</i>. Ce répertoire doit notamment comporter un répertoire
+    <i>bin</i> accompagné
+    d'un autre répertoire <i>express</i> correspondant donc au module que nous venons d'installer.
+</div>
+
+<h3>SocketIO</h3>
+Installons maintenant le module SocketIO. Comme indiqué sur le site officiel: <a href="http://socket.io/#home">http://socket.io/#home</a>,
+il suffit de saisir la commande suivante:
+<pre>
+<code ng-highlight="javascript">
+$ npm install socket.io
+</code>
+</pre>
+
+<h2>Fonctionnement</h2>
+Le fonctionnement du chat restera très basic. Voici les règles:
+<ul>
+    <li>1. Seul une personne loggée pourra envoyer des messages</li>
+    <li>2. Tout le monde pourra voir les messages échangés</li>
+    <li>3. Un message envoyé par une personne sera emis pour tout le monde</li>
+</ul>
+Il s'agit donc, vous l'aurez compris d'une version très simple que vous pourrez faire évoluer à votre convenance. On pourra imaginer
+notamment la mise en place d'un chat privé ou permettre l'échange de fichiers, smileys...
+Côté architecture cela reste évidemment très simple:
+<ul>
+    <li>Une partie Serveur: Cette partie sera composée d'un unique fichier</li>
+    <li>Une partie Cliente: J'ai décidé de séparer cette partie en 3 parties:
+        <ul>
+            <li>La vue: le fichier index.html</li>
+            <li>La mise en forme de la vue: la partie CSS</li>
+            <li>La partie applicative: le fichier app.js.</li>
+        </ul>
+    </li>
+</ul>
+Notons par ailleurs l'utilisation de jQuery pour la partie applicative côté client. JQuery simplifie beaucoup la syntaxe, notamment
+lorsqu'il s'agit de créer de nouveaux noeuds HTMLs.
+
+<h2>La partie Serveur</h2>
+On peut distinguer deux parties distinctes du côté du serveur:
+
+<h3>La partie configuration</h3>
+<pre>
+<code ng-highlight="javascript">
+var express = require("express");
+var app = express();
+var server = require("http").createServer(app);
+var io = require("socket.io").listen(server);
+
+var users = [];
+
+app.use(express.static('../client'));
+
+server.listen("6061");
+
+app.get("/", function (req, res) {
+    res.sendfile('client/index.html');
+});
+</code>
+</pre>
+
+<div class="trick lifted">
+    <i class="fa fa-leaf"></i>
+    Remarquez particulièrement la ligne n°8. Nous incitons le serveur à ne pas interpreter les fichiers présents dans le répertoire
+    <i>../client</i>. D'où l'utilisation de la fonction <i>static</i> présent dans ExpressJS.
+</div>
+
+<h3>Le protocole communication</h3>
+Il convient donc de mettre en place notre propre protocole de communication grâce à l'utilisation des sockets. SocketIO vous permet
+d'envoyer (<b>emit</b>) et de recevoir (<b>on</b>) des évenements. Trois évenements sont définis par défault par socketIO. Il s'agit des
+évènements <i>connect</i>, <i>disconnect</i> et <i>message</i>. Voici donc la suite de la partie serveur avec la mise en place des sockets:
+
+<div>
+<pre>
+<code ng-highlight="javascript">
+io.sockets.on('connection', function (socket) {
+    socket.emit("connect", {"users": users});
+
+    socket.emit("formData", {"state":"disconnected"});
+
+    socket.on("connectionUser", function (data) {
+        socket.set('user', data.username, function () {
+            io.sockets.emit("newUser", {"username":data.username});
+            socket.emit("formData", {"state":"connected"});
+        });
+        users.push(data.username);
+    });
+
+    socket.on("logoff", function () {
+        socket.get("user", function (err, username) {
+            var index = users.indexOf(username);
+            users.splice(index, 1);
+            socket.emit("formData", {"state":"disconnected"});
+            io.sockets.emit("userDisconnect", {"username":username});
+        });
+    });
+
+    socket.on("disconnect", function(){
+        socket.get("user", function (err, username) {
+            var index = users.indexOf(username);
+            users.splice(index, 1);
+            socket.emit("formData", {"state":"disconnected"});
+            io.sockets.emit("userDisconnect", {"username":username});
+        });
+    });
+
+    socket.on("message", function(data){
+        socket.get("user", function (err, username) {
+            io.sockets.emit("newMsg", {"message":data.content, "username":username});
+    });
+})
+});
+</code>
+</pre>
+</div>
+
+Notre protocole reste très simple mais mérite d'être tout de même commenté.
+        <ul>
+            <li>Le serveur écoute l'ouverture d'une connexion par un client. Lorsqu'un client accède à l'URL http://localhost:6061, le
+                serveur fournit la socket en paramètre. Ainsi, le serveur pourra s'adresser à un client particulier en utilisant
+                cette socket fournit lors de l'ouverture de la connexion. Il pourra également s'adresser à l'ensemble des clients
+                connectés en utilisant <i>io.sockets</i>.
+            </li>
+            <li>Lorsqu'un nouveau client arrive, le serveur fournit la liste des utilisateurs connectés</li>
+            <li>Le serveur tient à jour une liste d'utilisateurs qui est mise à jour lorsque les utilisateurs se connectent
+            ou se déconnectent du système. Notez l'utilisation de <i>socket.set</i> qui permet de nommer une socket. <i>socket.get</i>
+            permet de récupérer le nom affecté à une socket. Cela est très pratique dans notre cas afin de tenir notre liste
+            d'utilisateurs à jour</li>
+            <li>Lorsqu'un client émet un nouveau message, celui-ci est envoyé à tout le monde (utilisation de <i>io.sockets.emit</i>)</li>
+        </ul>
+<div class="trick lifted">
+    <i class="fa fa-leaf"></i>
+    Remarquez l'utilisation d'objets au format JSON afin de faciliter l'échange des messages.
+</div>
+
+<h2>La partie Cliente</h2>
+<h3>La vue</h3>
+On choisit ici un affichage en bloc. La partie connexion et information à gauche et la partie chatroom à droite. Tout cela est très subjectif,
+je vous l'accorde. Libre à vous de créer l'interface qui vous convient. Voyez ci-dessous l'affichage qu'est le mien:
+<div class="capture-chat"></div>
+Regardons maintenant le code HTML et CSS nous permettant d'arriver à cet affichage.
+<h4>HTML</h4>
+La partie <i>head</i> qui nous sert simplement à appeler notre feuille de style et à instancier une nouvelle socket.
+<pre>
+<code ng-highlight='xml'>
+    
+<link rel="stylesheet" type="text/css" href="css/style.css">
+<script src="../socket.io/socket.io.js"></script>
+<script>
+    var socket = io.connect("http://localhost:6061");
+</script>
+
+</code>
+</pre>
+
+La partie <i>body</i> qui est également très simple:
+<pre>
+<code ng-highlight='xml'> 
+    
+<div class="info-global">
+    <div class="login"></div>
+    <div class="info-chatroom">
+        <div class="news">
+            <h2>Actualités</h2>
+            <ul class="newsList"></ul>
+        </div>
+        <div class="users">
+            <h2>Participants</h2>
+            <ul class="participants"></ul>
+        </div>
+    </div>
+    <div class="write-msg">
+        <textarea placeholder="Votre message"></textarea>
+        <button>Envoyer</button>
+    </div>
+</div>
+
+<div class="chatroom">
+    <h1>Chatroom</h1>
+    <textarea class="msg" readonly></textarea>
+</div>
+
+<script src="js/lib/jquery-min.js"></script>
+<script src="js/app.js"></script>   
+
+</code>   
+</pre>
+
+<div class="trick lifted">
+    <i class="fa fa-leaf"></i>
+    Nous insérons JQuery ainsi que notre code JavaScript contenu dans le fichier <i>app.js</i> à la fin du bloc <i>body</i>. De cette 
+    manière, nous nous assurons que l'intégralité du DOM est chargé et que nous pouvons le manipuler.
+</div>
+
+<h4>CSS</h4>
+<pre>
+<code ng-highlight='css'>
+body{
+    height:700px;
+    margin-bottom: 30px;
+    background: rgba(255,255,255,1);
+    background: -moz-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(246,246,246,1) 47%, rgba(237,237,237,1) 100%);
+    background: -webkit-gradient(left top, right top, color-stop(0%, rgba(255,255,255,1)), color-stop(47%, rgba(246,246,246,1)), color-stop(100%, rgba(237,237,237,1)));
+    background: -webkit-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(246,246,246,1) 47%, rgba(237,237,237,1) 100%);
+    background: -o-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(246,246,246,1) 47%, rgba(237,237,237,1) 100%);
+    background: -ms-linear-gradient(left, rgba(255,255,255,1) 0%, rgba(246,246,246,1) 47%, rgba(237,237,237,1) 100%);
+    background: linear-gradient(to right, rgba(255,255,255,1) 0%, rgba(246,246,246,1) 47%, rgba(237,237,237,1) 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#ffffff', endColorstr='#ededed', GradientType=1 );
+    font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+    font-size: 14px;
+    line-height: 1.428571429;
+    color: #333;
+    overflow: hidden;
+
+}
+
+.info-global, .chatroom{
+    display: inline-block;
+    width:600px;
+    height: 585px;
+    vertical-align: top;
+    margin-top: 15px;
+}
+
+.chatroom{
+    padding-left:20px;
+    margin-left: 10px;
+    border: 1px solid #d1d1d1;
+    border-radius: 4px;
+    box-shadow: 4px 4px 10px rgb(102, 100, 100);
+}
+
+.login, .info-chatroom, .write-msg{
+    display:block;
+    border: 1px solid #d1d1d1;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    box-shadow: 4px 4px 10px rgb(102, 100, 100);
+    padding: 15px;
+}
+
+.info-chatroom{
+    height:251px;
+}
+
+.info-chatroom .news, .info-chatroom .users{
+    width:250px;
+    height: 250px;
+    display: inline-block;
+    vertical-align: top;
+    padding-left: 20px;
+}
+
+.info-chatroom .news{
+    border-right: 1px solid black;
+}
+
+.info-chatroom .users .participants{
+    list-style: circle;
+}
+
+.info-chatroom .users .participants li{
+    line-height: 25px;
+}
+
+
+.write-msg{
+    height:160px;
+}
+
+.write-msg textarea{
+    margin-left: 20px;
+    width: 400px;
+    height: 140px;
+    padding: 6px 12px;
+    font-size: 13px;
+    line-height: 1.428571429;
+    color: #555;
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: none;
+}
+
+.write-msg button{
+    margin-top: -40px;
+    height: 48px;
+    color: #fff;
+    background-color: #3276b1;
+    border-color: #285e8e;
+    font-weight: 400;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    background-image: none;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.428571429;
+    border-radius: 4px;
+}
+
+.login input{
+    font-weight: bolder;
+    margin-left: 10px;
+    margin-right: 10px;
+    width: 400px;
+    height: 35px;
+    padding: 6px 12px;
+    font-size: 18px;
+    line-height: 1.428571429;
+    color: #555;
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.login button{
+    margin-top: -5px;
+    height: 48px;
+    color: #fff;
+    font-weight: 400;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    background-image: none;
+    border: 1px solid transparent;
+    white-space: nowrap;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.428571429;
+    border-radius: 4px;
+}
+
+.login button.active{
+    background-color: #3276b1;
+    border-color: #285e8e;
+}
+
+.login button.inactive{
+    background-color: #d2322d;
+    border-color: #ac2925;
+    width: 550px;
+}
+
+textarea.msg{
+    width:550px;
+    height: 450px;
+    resize: none;
+    padding: 6px 12px;
+    font-size: 13px;
+    line-height: 1.428571429;
+    color: #555;
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    resize: none;
+}
+</code>    
+</pre>
+
+<h3>Le Javascript</h3>
+Au sein de ce code JavaScript, nous allons manipuler notre DOM afin de réagir aux différents évènements 
+envoyés par le serveur. Parallèlement à cela, nous allons emettre des évènements lorsque l'utilisateurs 
+produira des actions.
+
+<pre>
+<code ng-highlight='javascript'>
+var templatesLogin = {
+    "disconnected": '<input type="text" placeholder="pseudo"/><button class="active">Se connecter</button>',
+    "connected": '<button class="inactive">Se déconnecter</button>'
+}
+
+$('.write-msg button').on("click", function (event) {
+    socket.emit("message", {"content": $(".write-msg textarea").val()});
+});
+
+socket.on("connect", function (data) {
+    var users = (data) ? data.users : [];
+    for (var i = 0; i < users.length; i++) {
+        $('.participants').append("<li>" + users[i] + "</li>")
+    }
+});
+
+socket.on("newUser", function (data) {
+    $('.participants').append("<li>" + data.username + "</li>");
+    createNews(data.username + " a rejoint la conversation")
+});
+
+socket.on("formData", function (data) {
+    unbindEvents();
+    $(".login").children().remove();
+    $(".login").append(templatesLogin[data.state]);
+    bindEvents();
+    if (data.state === "disconnected") {
+        $(".write-msg textarea").attr("readonly", "");
+        $(".write-msg button").attr("disabled", "");
+    } else {
+        $(".write-msg textarea").removeAttr("readonly");
+        $(".write-msg button").removeAttr("disabled")
+    }
+});
+
+socket.on("userDisconnect", function (data) {
+    $(".participants").find("li:contains('" + data.username + "')").remove();
+    if (data.username)
+        createNews(data.username + " a quitté la conversation")
+});
+
+socket.on("newMsg", function (data) {
+    $(".chatroom .msg").val($(".chatroom .msg").val() + "\n\n" + data.username + ": " + data.message);
+    $(".write-msg textarea").val("");
+});
+
+function createNews(msg) {
+    $(".newsList").append("<li>" + msg + "</li>");
+}
+
+function bindEvents() {
+    if ($('.login button.active').length > 0) {
+        $('.login').on("click", "button.active", function () {
+            var username = document.querySelector(".login input").value;
+            socket.emit("connectionUser", {"username": username});
+        })
+    } else {
+        $('.login').on("click", "button.inactive", function () {
+            socket.emit("logoff");
+        });
+    }
+}
+
+function unbindEvents(){
+    if ($('.login button.active').length > 0)
+        $('.login').off("click", "button.active")
+    else
+        $('.login').off("click", "button.inactive");
+}
+</code>    
+</pre>
+
+
+<h2>Lancement du chat</h2>
+Rien de plus simple concernant le démarrage du serveur:
+<pre>
+<code ng-highlight="bash">
+[ ~/workspace_perso ] cd mini-chat-socketio/
+[ ~/workspace_perso/mini-chat-socketio ] cd server/
+[ ~/workspace_perso/mini-chat-socketio/server ] node server.js
+</code>    
+</pre>
+
+Votre terminal devrait vous indiquer quelque chose comme:
+<pre>
+<code ng-highlight='bash'>
+info  - socket.io started
+</code>    
+</pre>
+Cela vous informe du bon demarrage de socket.io et donc de votre serveur.
+
+Accédez à la page via votre navigateur avec l'URL: <a href='http://localhost:6061/'>http://localhost:6061</a>. 
+Vous devriez voir votre chat. A vous de jouer avec. Testez en ouvrant plusieurs onglets et constatez l'imbrication 
+des messages. Vous pouvez récupérer les sources de ce projet sur <i>github</i>: <a href='https://github.com/michelre/mini-chat'>https://github.com/michelre/mini-chat</a>
+    

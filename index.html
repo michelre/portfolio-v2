@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rémi Michel - Portfolio</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <meta name="identifier-url" content="http://www.remi-michel.fr"/>
+    <meta name="title" content="Rémi Michel - Portfolio"/>
+    <meta name="description"
+          content="Je m'appelle Rémi Michel et je suis développeur Web. Ce site, entièrement créé en JavaScript présente mon profil sous forme d'un livre (TurnJS)."/>
+    <meta name="abstract"
+          content="Je m'appelle Rémi Michel et je suis développeur Web. Ce site, entièrement créé en JavaScript présente mon profil sous forme d'un livre (TurnJS)."/>
+    <meta name="keywords" content="portfolio, web developer, développeur web, javascript, Rémi Michel"/>
+    <meta name="author" content="Michel Rémi"/>
+    <meta name="revisit-after" content="10"/>
+    <meta name="language" content="fr-FR"/>
+    <meta name="robots" content="All"/>
+
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+    <link href="css/general.css" rel="stylesheet">
+    <link href="css/index.css" rel="stylesheet">
+    <link href="css/article-download-stream.css" rel="stylesheet">
+    <link href="css/article-socket-io.css" rel="stylesheet">
+    <link href="css/articles-common.css" rel="stylesheet">
+    <link href="css/cv.css" rel="stylesheet">
+    <link href="css/timeline.css" rel="stylesheet">
+    <link href="css/lib/tooltipster.css" rel="stylesheet">
+    <link href="css/lib/timeline.css" rel="stylesheet">
+    <link href="css/lib/highlight.css" rel="stylesheet">
+
+    <script data-main="js/main.js" src="js/lib/requirejs.js"></script>
+</head>
+<body>
+<div class="head">
+    <div class="title">remi-michel.fr</div>
+    <div class="title_icon_center"></div>
+    <ul class="menu">
+        <li class="home">
+            <a href="#/">
+                <div><i class="fa fa-user fa-3x"></i>CV</div>
+            </a>
+        </li>
+        <li class="articles">
+            <a href="#/articles">
+                <div><i class="fa fa-pencil-square fa-3x"></i>Articles</div>
+            </a>
+        </li>
+    </ul>
+</div>
+<div class="body">
+    <div class="content">
+        <div ng-view></div>
+    </div>
+</div>
+</body>
+</html>

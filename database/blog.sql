@@ -1,4 +1,4 @@
-CREATE DATABASE IF NOT EXISTS blog;
+use remimichel;
 DROP TABLE IF EXISTS commentaire;
 DROP TABLE IF EXISTS article;
 

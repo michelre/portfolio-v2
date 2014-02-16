@@ -39,6 +39,7 @@ $app->put("/ws/comment/:articleId", function($articleId) use($app){
         echo(json_encode(array("status"=>"ok")));
     else
         echo(json_encode(array("error"=>$conn->error)));
+    $conn->close();
 });
 
 $app->run();

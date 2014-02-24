@@ -173,13 +173,13 @@
 }
 
 #angular-icon{
-     display: inline-block;
-     vertical-align: top;
-     background-image: url(../img/angular-icon.png);
-     width: 60px;
-     height:60px;
-     margin-top: 20px;
- }
+    display: inline-block;
+    vertical-align: top;
+    background-image: url(../img/angular-icon.png);
+    width: 60px;
+    height:60px;
+    margin-top: 20px;
+}
 
 #flask-icon{
     display: inline-block;
@@ -204,4 +204,51 @@
     font-size: 15px;
     margin-top: 10px;
     font-weight: bolder;
+}
+
+.cv #carousel-wrapper{
+    box-shadow: 0 0 5px #CFC9C9;
+}
+
+.cv .content{
+    position: relative;
+    font: 13px Helvetica, arial, freesans, clean, sans-serif;
+    line-height: 1.4;
+    text-align: justify;
+}
+
+.cv .content .shoppingadventure{
+    background-image: url(../img/shoppingadventure.png);
+    width: 150px;
+    height: 79px;
+    position: absolute;
+    right: 12px;
+    top: -13px;
+}
+
+.cv .content .stendhal{
+    background-image: url(../img/stendhal.png);
+    width: 100px;
+    height:60px;
+    margin-top:50px;
+    position: absolute;
+    right: 12px;
+    top: -63px;
+}
+
+.cv .content .ujf{
+    background-image: url(../img/ujf.png); 
+    width: 80px;
+    height:80px;
+    margin-top:10px;
+    position: absolute;
+    right: 12px;
+    top: -29px;
+}
+
+.cv .content h2{
+    font-size: 18px;
+    font-weight: normal;
+    color: #2A2A2A;
+    margin: 0 0 10px;
 }

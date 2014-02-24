@@ -5,7 +5,7 @@ define(["angular", "angular-sanitize", "app/services/menu-service"], function(an
         var self = $scope;
 
         self.$on("$routeChangeSuccess", function(){
-            initMenu(".home")
+            initMenu(".home");
         });
 
     }]);

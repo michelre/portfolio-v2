@@ -19,5 +19,3 @@ define(["jquery", "angular", "tooltipster"], function($, _angular, _tooltipster)
         }
     });
 });
-
-

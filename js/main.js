@@ -18,13 +18,6 @@ requirejs.config({
             "deps": ["jquery"],
             "exports": "tooltipster"
         },
-        /*"timeline":{
-            "deps":["jquery", "storyjs-embed"],
-            "exports":"timeline"
-        },
-        "storyjs-embed":{
-            "exports":"storyjs-embed"
-        }*/
     },
 
     paths:{

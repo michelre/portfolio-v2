@@ -26,8 +26,6 @@ requirejs.config({
         "angular-sanitize": "lib/angular-sanitize.min",
         "jquery": "lib/jquery-2.0",
         "tooltipster": "lib/tooltipster.min",
-        //"timeline": "http://cdn.knightlab.com/libs/timeline/latest/js/timeline-min",
-        //"storyjs-embed": "http://cdn.knightlab.com/libs/timeline/latest/js/storyjs-embed",
         "highlight": "../highlight",
         "app": "app"
     }
